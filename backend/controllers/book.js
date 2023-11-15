@@ -93,44 +93,37 @@ exports.getAllBook = (req, res, next) => {
   );
 };
 
-exports.rateBook = (req, res, next) => {
-  Book.findOne({ _id: req.params.id})
-  .then(book => {
-      if (book.userId == req.auth.userId) {
-        res.status(403).json({ message : 'unauthorized request '});
-      } else {
-        let sum =req.body.rating;
-        for (let cpt=0; cpt < book.ratings.length; cpt++) {
-          sum += book.ratings[cpt].grade;
-        }
-        const average = sum / (book.ratings.length+1);
-        delete book.userId;
-        const bookObject = new Book({
-          // _id : req.params.id,
-          userId : req.auth.userId,
-          title: book.title,
-          author: book.author,
-          imageUrl: book.imageUrl,
-          year: book.year,
-          genre: book.genre,
-          // ...book,
-          ratings: [...book.ratings,{userId : req.auth.userId , grade : req.body.rating}],
-          averageRating : average
-        });
-        console.log(bookObject);
-        res.status(200).json(req.params.id);
-        Book.updateOne({ _id: req.params.id}, { ...bookObject, _id: req.params.id})
-        // Book.updateOne({ _id: req.params.id}, { bookObject})
-        .then(() => {res.status(200).json(req.params.id)})
-        .catch(error => res.status(401).json({ error }));
-
-      }
-  })
-  .catch( error => {
-      res.status(400).json({ error });
-      // console.log(error);
-  });
+exports.rateBook = (req, res) => {
+  //on récupère le livre à l'id correspondant
+  Book.findOne({ _id: req.params.id })
+      .then(book => {
+          //on vérifie si l'utilisateur a déjà noté le livre => pas possible de remettre une note
+          if (book.ratings.includes(rating => rating.userId == req.auth.userId)) {
+              res.status(404).json({ message: 'Vous avez déja noté ce livre' });
+          // on vérifie que la note soit comprise entre 1 et 5
+          } else if (1 > req.body.rating > 5) {
+              res.status(404).json({ message: 'La note doit être comprise entre 1 et 5' });
+          } else {
+              //push le userId et le grade dans le tableau ratings de l'objet book
+              book.ratings.push({
+                  userId: req.auth.userId,
+                  grade: req.body.rating
+              });
+              //on initialise la somme de toutes les notes du tableau ratings
+              let sumGrades = 0
+              //pour chaque index du tableau ratings, on récupère la 'grade' et on l'ajoute à la somme des notes
+              for (let i = 0; i < book.ratings.length; i++) {
+                  sumGrades += book.ratings[i].grade;
+              }
+              //on actualise la note moyenne en divisant la somme des notes par le nombre de notes dispo dans le tableau
+              book.averageRating = Math.round((sumGrades / book.ratings.length) * 100) / 100;
+              return book.save();
+          }
+      })
+      .then((book) => { res.status(200).json(book); })
+      .catch((error) => { res.status(404).json({ error: error }); });
 };
+
 
 exports.getBestRatedBooks = (req, res, next) => {
   Book.find().sort({averageRating:-1}).limit(3)
