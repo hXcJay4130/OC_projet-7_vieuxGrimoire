@@ -2,61 +2,59 @@ const Book = require('../models/Book');
 const fs = require('fs');
 
 exports.createBook = (req, res, next) => {
-  
+  // on récupère les informations du livre dans le formulaire (corps de la requête)
   const bookObject = JSON.parse(req.body.book);
+  // on efface l'id de l'objet et celui de l'utilisateur créateur
   delete bookObject._id;
   delete bookObject._userId;
+  // on crée un livre selon le modèle en récupérant l'objet livre précédent et en y ajoutant l'identifiant de l'utilisateur authentifié et le chemin de l'image
   const book = new Book({
       ...bookObject,
       userId: req.auth.userId,
-      imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+      imageUrl: req.file.path
   });
-
+  // on enregistre en base de données avec un then / catch pour connaitre le statut du résultat de la requête
   book.save()
   .then(() => { res.status(201).json({message: 'Livre enregistré !'})})
   .catch(error => { res.status(400).json( { error })})
-
 };
 
 exports.getOneBook = (req, res, next) => {
-  Book.findOne({
-    _id: req.params.id
-  }).then(
-    (book) => {
-      res.status(200).json(book);
-    }
-  ).catch(
-    (error) => {
-      res.status(404).json({
-        error: error
-      });
-    }
+  // on recherche le livre en bdd à partir de son identifiant
+  Book.findOne({_id: req.params.id})
+  .then( //en cas de succès on renvoie le livre
+    (book) => {res.status(200).json(book);}
+  )
+  .catch( // en cas d'erreur on renvoie un mesage d'erreur
+    (error) => {res.status(404).json({error: error});}
   );
 };
 
 exports.modifyBook = (req, res, next) => {
+  // si le fichier image est modifié on crée un objet livre à partir du formulaire et de l'url d'image sinon on a juste besoin de la chaine de caractère req.body
   const bookObject = req.file ? {
     ...JSON.parse(req.body.book),
-    imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+    imageUrl: req.file.path
   } : { ...req.body };
-
+  // on efface l'id de l'utilisateur créateur
   delete bookObject._userId;
-
+  // on recherche le livre en bdd à partir de son identifiant
   Book.findOne({_id: req.params.id})
   .then((book) => {
-      if (book.userId != req.auth.userId) {
-          res.status(403).json({ message : 'unauthorized request '});
+      if (book.userId != req.auth.userId) { // seul le créateur du livre peut le modifier
+          res.status(403).json({ message : 'unauthorized request'});
       } else {
-        const formerFilename = book.imageUrl.split('/images/')[1];
-        // console.log(formerFilename)
-        // console.log(req.file)
-        fs.unlink(`images/${formerFilename}`, () => {
-          Book.updateOne({ _id: req.params.id}, { ...bookObject, _id: req.params.id})
-              .then(() => { res.status(200).json({message: 'Livre modifié !'})})
-              .catch(error => res.status(401).json({ error }));
+        if (req.file) {
+          const filename = book.imageUrl.split('/images/')[1];
+          fs.unlink(`images/${filename}`, () => {
         });
+        }
+        Book.updateOne({ _id: req.params.id}, { ...bookObject, _id: req.params.id})
+            .then(() => res.status(200).json({message : 'Livre modifié!'}))
+            .catch(error => res.status(401).json({ error }));
       }
-  })     
+  })
+      
   .catch((error) => res.status(400).json({ error }));
 };
 
