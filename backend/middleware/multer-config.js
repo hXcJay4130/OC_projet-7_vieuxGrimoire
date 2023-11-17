@@ -5,21 +5,16 @@ const MIME_TYPES = {
   'image/jpeg': 'jpg',
   'image/png': 'png'
 };
-
-// console.log(req.file);
+// configuration de multer qui permet de traiter les fichiers téléchargés
 const storage = multer.diskStorage({
   destination: (req, file, callback) => {
-//   destination: (req, file.path, callback) => {
-    callback(null, 'images');
+    callback(null, 'images'); // la destination d'enregistrement est le fichiers /images
   },
   filename: (req, file, callback) => {
-    // const name = file.originalname.split(' ').join('_');
-    const name = file.originalname.split('.')[0].split(' ').join('_');
-    const extension = MIME_TYPES[file.mimetype];
-    callback(null, name + Date.now() + '.' + extension);
-    // path.join('images',`resized-${filename}.webp`)
+    const name = file.originalname.split('.')[0].split(' ').join('_'); // l'image est renommée avec des _ au lieu des espaces pour éviter des problèmes de serveur
+    const extension = MIME_TYPES[file.mimetype]; // l'extension est récupérée ....
+    callback(null, name + Date.now() + '.' + extension); // ... et rajoutée au nouveau nom de fichier
   }
 });
-
 
 module.exports = multer({storage: storage}).single('image');

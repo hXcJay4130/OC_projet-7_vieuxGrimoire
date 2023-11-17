@@ -44,26 +44,25 @@ exports.modifyBook = (req, res, next) => {
       if (book.userId != req.auth.userId) { // seul le créateur du livre peut le modifier
           res.status(403).json({ message : 'unauthorized request'});
       } else {
-        if (req.file) {
+        if (req.file) { //si l'image a été mise à jour on supprime l'ancienne dans le dossier
           const filename = book.imageUrl.split('/images/')[1];
           fs.unlink(`images/${filename}`, () => {
         });
-        }
+        } // on met à jour le livre en bdd
         Book.updateOne({ _id: req.params.id}, { ...bookObject, _id: req.params.id})
             .then(() => res.status(200).json({message : 'Livre modifié!'}))
             .catch(error => res.status(401).json({ error }));
       }
-  })
-      
+  })  
   .catch((error) => res.status(400).json({ error }));
 };
 
 exports.deleteBook = (req, res, next) => {
   Book.findOne({ _id: req.params.id})
-      .then(book => {
+      .then(book => { // seul le créateur du livre peut le supprimer
           if (book.userId != req.auth.userId) {
               res.status(401).json({message: 'Not authorized'});
-          } else {
+          } else { // on supprime l'image dans le dossier et le livre en bdd
               const filename = book.imageUrl.split('/images/')[1];
               fs.unlink(`images/${filename}`, () => {
                   Book.deleteOne({_id: req.params.id})
@@ -78,6 +77,7 @@ exports.deleteBook = (req, res, next) => {
 };
 
 exports.getAllBook = (req, res, next) => {
+  // on recherche tous les livres en bdd et on renvoie un objet contenant la liste des livres en cas de succès
   Book.find().then(
     (books) => {
       res.status(200).json(books);
@@ -102,7 +102,7 @@ exports.rateBook = (req, res) => {
           } else if (1 > req.body.rating > 5) {
               res.status(404).json({ message: 'La note doit être comprise entre 1 et 5' });
           } else {
-              //push le userId et le grade dans le tableau ratings de l'objet book
+              //on rajoute le userId et le grade dans le tableau ratings initial de l'objet book 
               book.ratings.push({
                   userId: req.auth.userId,
                   grade: req.body.rating
@@ -122,9 +122,9 @@ exports.rateBook = (req, res) => {
       .catch((error) => { res.status(404).json({ error: error }); });
 };
 
-
 exports.getBestRatedBooks = (req, res, next) => {
+  // on récupère l'ensemble des livres triés dans l'ordre décroissant de note, et on ne garde que les 3 rpmiers
   Book.find().sort({averageRating:-1}).limit(3)
-  .then((books) => {res.status(200).json(books);})
+  .then((books) => {res.status(200).json(books);}) // on renvoie un objet contenant la liste des livres en cas de succès
   .catch((error) => {res.status(400).json({error: error});});
 };

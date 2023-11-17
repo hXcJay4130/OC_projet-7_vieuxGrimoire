@@ -17,7 +17,6 @@ const resizeImg = (req, res,next) => {
      .then(() => {
         fs.unlink(req.file.path, () => { // On enleve le chemin de l'image initialement uploadée
             const name = req.file.filename.split('.')[0];
-            // console.log("Nom du fichier : " + name);
             const imageUrl = `${req.protocol}://${req.get('host')}/images/resized-${name}.webp` // pour le remplacer par celui de la nouvelle
             req.file.path = imageUrl;
             next();
