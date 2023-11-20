@@ -5,17 +5,24 @@ const User = require('../models/User');
 
 // création d'un compte
 exports.signup = (req, res, next) => {
-    bcrypt.hash(req.body.password, 10) //on crypte le mot de passe
-      .then(hash => { // une fois le cryptage réussi on crée un user avec login et mot de passe
-        const user = new User({
-          email: req.body.email,
-          password: hash
-        });
-        user.save() // on enregistre le nouvel utilisateur
-          .then(() => res.status(201).json({ message: 'Utilisateur créé !' }))
-          .catch(error => res.status(400).json({ error }));
-      })
-      .catch(error => res.status(700).json({ error }));
+    User.findOne({ email: req.body.email })
+    .then(user => {
+        if (user) { // si l'utilisateur existe déjà en bdd => erreur
+            return res.status(401).json({ error: 'Utilisateur existant !' });
+        } // si ce n'est pas le cas on crée un utilisateur nouveau
+        bcrypt.hash(req.body.password, 10) //on crypte le mot de passe
+        .then(hash => { // une fois le cryptage réussi on crée un user avec login et mot de passe
+            const user = new User({
+            email: req.body.email,
+            password: hash
+            });
+            user.save() // on enregistre le nouvel utilisateur
+            .then(() => res.status(201).json({ message: 'Utilisateur créé !' }))
+            .catch(error => res.status(400).json({ error }));
+        })
+        .catch(error => res.status(700).json({ error }));
+    })
+    .catch(error => res.status(500).json({ error }));
   };
 
   // identification par login
