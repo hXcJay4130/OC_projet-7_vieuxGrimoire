@@ -10,6 +10,10 @@ exports.signup = (req, res, next) => {
     if (req.body.password === "" || req.body.email === "") {
         return res.status(401).json({ error: 'Les deux champs sont obligatoires !' });
     }
+    const pswRegex = new RegExp(/^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/);
+    if (!pswRegex.test(req.body.password)) {
+        return res.status(401).json({ error: 'Le mots de passe doit avoir 8 caractères minimum, une majuscule, une minuscule, un chiffre et un  caractère spécial #,@,$,!,%,*,? ou &.' });
+    }
     bcrypt.hash(req.body.password, 10) //on crypte le mot de passe avec 10 passe de hashage
       .then(hash => { // une fois le cryptage réussi on crée un user avec login et mot de passe
         const user = new User({
