@@ -4,25 +4,23 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 // création d'un compte
+// L'unicité de l'utilisateur est assurée par la dépendance mongoose-unique-validator appelé dans le modèle User
 exports.signup = (req, res, next) => {
-    User.findOne({ email: req.body.email })
-    .then(user => {
-        if (user) { // si l'utilisateur existe déjà en bdd => erreur
-            return res.status(401).json({ error: 'Utilisateur existant !' });
-        } // si ce n'est pas le cas on crée un utilisateur nouveau
-        bcrypt.hash(req.body.password, 10) //on crypte le mot de passe
-        .then(hash => { // une fois le cryptage réussi on crée un user avec login et mot de passe
-            const user = new User({
-            email: req.body.email,
-            password: hash
-            });
-            user.save() // on enregistre le nouvel utilisateur
-            .then(() => res.status(201).json({ message: 'Utilisateur créé !' }))
-            .catch(error => res.status(400).json({ error }));
-        })
-        .catch(error => res.status(700).json({ error }));
-    })
-    .catch(error => res.status(500).json({ error }));
+    // Vérification qu'il y a bien un mot de passe
+    if (req.body.password === "" || req.body.email === "") {
+        return res.status(401).json({ error: 'Les deux champs sont obligatoires !' });
+    }
+    bcrypt.hash(req.body.password, 10) //on crypte le mot de passe avec 10 passe de hashage
+      .then(hash => { // une fois le cryptage réussi on crée un user avec login et mot de passe
+        const user = new User({
+          email: req.body.email,
+          password: hash
+        });
+        user.save() // on enregistre le nouvel utilisateur
+          .then(() => res.status(201).json({ message: 'Utilisateur créé !' }))
+        //   .catch(error => res.status(403).json({ error })); // accès refusé
+      })
+      .catch(error => res.status(424).json({ error })); // une méthode a échouée
   };
 
   // identification par login
@@ -47,7 +45,7 @@ exports.signup = (req, res, next) => {
                         )
                     });
                 })
-                .catch(error => res.status(500).json({ error }));
+                .catch(error => res.status(401).json({ error })); // utilisateur non identifié
         })
-        .catch(error => res.status(500).json({ error }));
+        .catch(error => res.status(500).json({ error })); // erreur serveur
  };

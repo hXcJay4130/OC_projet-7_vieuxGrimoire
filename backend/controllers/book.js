@@ -42,7 +42,7 @@ exports.modifyBook = (req, res, next) => {
   Book.findOne({_id: req.params.id})
   .then((book) => {
       if (book.userId != req.auth.userId) { // seul le créateur du livre peut le modifier
-          res.status(403).json({ message : 'unauthorized request'});
+          res.status(403).json({ message : 'Requête non autorisée !'});
       } else {
         if (req.file) { //si l'image a été mise à jour on supprime l'ancienne dans le dossier
           const filename = book.imageUrl.split('/images/')[1];
@@ -50,7 +50,7 @@ exports.modifyBook = (req, res, next) => {
         });
         } // on met à jour le livre en bdd
         Book.updateOne({ _id: req.params.id}, { ...bookObject, _id: req.params.id})
-            .then(() => res.status(200).json({message : 'Livre modifié!'}))
+            .then(() => res.status(200).json({message : 'Livre modifié !'}))
             .catch(error => res.status(401).json({ error }));
       }
   })  
@@ -61,7 +61,7 @@ exports.deleteBook = (req, res, next) => {
   Book.findOne({ _id: req.params.id})
       .then(book => { // seul le créateur du livre peut le supprimer
           if (book.userId != req.auth.userId) {
-              res.status(401).json({message: 'Not authorized'});
+              res.status(401).json({message: 'Requête non autorisée !'});
           } else { // on supprime l'image dans le dossier et le livre en bdd
               const filename = book.imageUrl.split('/images/')[1];
               fs.unlink(`images/${filename}`, () => {
