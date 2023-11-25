@@ -22,7 +22,7 @@ exports.signup = (req, res, next) => {
         });
         user.save() // on enregistre le nouvel utilisateur
           .then(() => res.status(201).json({ message: 'Utilisateur créé !' }))
-        //   .catch(error => res.status(403).json({ error })); // accès refusé
+          .catch(error => res.status(403).json({ error })); // accès refusé
       })
       .catch(error => res.status(424).json({ error })); // une méthode a échouée
   };

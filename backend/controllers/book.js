@@ -46,9 +46,8 @@ exports.modifyBook = (req, res, next) => {
       } else {
         if (req.file) { //si l'image a été mise à jour on supprime l'ancienne dans le dossier
           const filename = book.imageUrl.split('/images/')[1];
-          fs.unlink(`images/${filename}`, () => {
-        });
-        } // on met à jour le livre en bdd
+          fs.unlink(`images/${filename}`, () => {});} 
+        // on met à jour le livre en bdd
         Book.updateOne({ _id: req.params.id}, { ...bookObject, _id: req.params.id})
             .then(() => res.status(200).json({message : 'Livre modifié !'}))
             .catch(error => res.status(401).json({ error }));
